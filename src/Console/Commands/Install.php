@@ -3,6 +3,7 @@
 namespace RushApp\Core\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 
 class Install extends Command
 {
@@ -39,8 +40,15 @@ class Install extends Command
         ]);
 
         $this->output->progressAdvance(3);
+        $this->cacheClear();
         $this->output->progressFinish();
 
         return 0;
+    }
+
+    private function cacheClear()
+    {
+        Artisan::call('cache:clear');
+        Artisan::call('config:cache');
     }
 }
