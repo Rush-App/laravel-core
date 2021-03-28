@@ -1,5 +1,8 @@
 <?php
 
 return [
-    'not_found' => 'Not found. From core.',
+    'not_found' => 'Not found.',
+    'permission_denied' => 'Permission denied.',
+    'save_error' => 'Cannot save model.',
+    'destroy_error' => 'Cannot delete model.',
 ];
