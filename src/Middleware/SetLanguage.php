@@ -12,9 +12,7 @@ class SetLanguage
 {
     public function handle(Request $request, Closure $next)
     {
-        $languageName = $request->has('language')
-            ? $request->get('language')
-            : $request->header('Language');
+        $languageName = $request->header('Language');
 
         $cacheTTL = config('rushapp_core.default_cache_ttl');
         /** @var Collection|Language[] $languages */
