@@ -2,13 +2,11 @@
 
 namespace RushApp\Core\Models;
 
-use App\Models\Post\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Monolog\Logger;
 use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Exceptions\CoreHttpException;
 use RushApp\Core\Services\LoggingService;

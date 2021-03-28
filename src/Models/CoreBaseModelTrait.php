@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Services\UserActionsService;
@@ -52,8 +51,7 @@ trait CoreBaseModelTrait
      */
     public bool $canBeManagedByOwner = true;
 
-
-        /**
+    /**
      * set the initial parameters from the name of the model received from the controller
      * (the name of the model must be indicated in each controller)
      *
@@ -92,7 +90,6 @@ trait CoreBaseModelTrait
     {
         return $this->tableTranslationName;
     }
-
 
     /**
      * returns a collection of model records with translations
@@ -211,23 +208,6 @@ trait CoreBaseModelTrait
     }
 
     /**
-     * adds to each column in the table the name of the table itself
-     * (example: ($tablePluralName - countries, columnName - id) => result - countries.id)
-     *
-     * @param array $existingTableColumns
-     * @return array
-     */
-    protected function getQueryParams(array $existingTableColumns): array {
-        return array_combine(
-            array_map(
-                fn($k) => $this->tablePluralName. '.' . $k,
-                array_keys($existingTableColumns)
-            ),
-            $existingTableColumns
-        );
-    }
-
-    /**
      * checking for the existence of column names in the table
      *
      * @param string $columnName - column name in the table
@@ -246,17 +226,6 @@ trait CoreBaseModelTrait
             config('boilerplate.default_cache_ttl'),
             fn () => collect(DB::getSchemaBuilder()->getColumnListing($tableName))
         );
-    }
-
-
-    /**
-     * checking is table exists
-     *
-     * @param string $tableName
-     * @return bool
-     */
-    protected function isTableExist(string $tableName): bool {
-        return Schema::hasTable($tableName);
     }
 
     /**
@@ -303,17 +272,6 @@ trait CoreBaseModelTrait
         return $filteredFields;
     }
 
-    /**
-     * Get id from request url (example: .../112)
-     *
-     * @param $request
-     * @return int
-     */
-    protected function getRequestId($request): int
-    {
-        return (int) ($request->route($this->getTableSingularName()) ?: $request->route('id'));
-    }
-
     protected function parseParameterWithAdditionalValues(string $parametersString, bool $shouldCheckColumnsInTable = true): Collection
     {
         $parameters = explode('|', $parametersString);
@@ -336,10 +294,5 @@ trait CoreBaseModelTrait
         }
 
         return $parsedParameters;
-    }
-
-    protected function tt()
-    {
-
     }
 }
