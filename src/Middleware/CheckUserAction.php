@@ -22,7 +22,7 @@ class CheckUserAction
     {
         if (!$this->userActionsService->canUserPerformAction($request)) {
             abort(
-                config('boilerplate.http_statuses.forbidden'),
+                config('rushapp_core.http_statuses.forbidden'),
                 __('Forbidden')
             );
         }

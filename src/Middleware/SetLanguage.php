@@ -16,7 +16,7 @@ class SetLanguage
             ? $request->get('language')
             : $request->header('Language');
 
-        $cacheTTL = config('boilerplate.default_cache_ttl');
+        $cacheTTL = config('rushapp_core.default_cache_ttl');
         /** @var Collection|Language[] $languages */
         $languages = Cache::remember('languages', $cacheTTL, function () {
             return Language::all();

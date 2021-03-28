@@ -10,7 +10,7 @@ class LoggingService
 {
     public static function auth(mixed $message, int $level): void
     {
-        self::getLogger(config('boilerplate.log_groups.auth'), $level)->log($level, $message);
+        self::getLogger(config('rushapp_core.log_groups.auth'), $level)->log($level, $message);
     }
 
     public static function debug(mixed $message): void
@@ -56,7 +56,7 @@ class LoggingService
     protected static function logCore(mixed $message, int $level)
     {
         $levelName = strtolower(Logger::getLevelName($level));
-        $logger = self::getLogger(config('boilerplate.log_groups.core'), $level);
+        $logger = self::getLogger(config('rushapp_core.log_groups.core'), $level);
 
         $logger->$levelName($message);
     }

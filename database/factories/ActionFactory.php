@@ -21,7 +21,7 @@ class ActionFactory extends Factory
      */
     public function definition()
     {
-        $actionNames = config('boilerplate.action_names', []);
+        $actionNames = config('rushapp_core.action_names', []);
 
         return [
             'action_name' => $this->faker->randomElement($actionNames),
@@ -36,7 +36,7 @@ class ActionFactory extends Factory
      */
     public function createAllActionsForEntity(string $entityName): array
     {
-        $actionNames = config('boilerplate.action_names', []);
+        $actionNames = config('rushapp_core.action_names', []);
 
         $actions = [];
         foreach ($actionNames as $actionName) {

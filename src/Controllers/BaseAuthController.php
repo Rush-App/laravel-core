@@ -68,6 +68,6 @@ abstract class BaseAuthController extends BaseController
 
     protected function getUserClass(): string
     {
-        return config('boilerplate.user_model');
+        return config('rushapp_core.user_model');
     }
 }

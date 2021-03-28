@@ -37,7 +37,7 @@ class UserActionsService
     public function getUserActions(): Collection
     {
         $userId = Auth::id();
-        $cacheTTL = config('boilerplate.default_cache_ttl');
+        $cacheTTL = config('rushapp_core.default_cache_ttl');
         return Cache::remember("user-actions.$userId", $cacheTTL, function () use ($userId) {
             return Action::query()
                 ->join('role_action as ra', 'ra.action_id', '=', 'actions.id')

@@ -223,7 +223,7 @@ trait CoreBaseModelTrait
     {
         return Cache::remember(
             "$tableName-columns",
-            config('boilerplate.default_cache_ttl'),
+            config('rushapp_core.default_cache_ttl'),
             fn () => collect(DB::getSchemaBuilder()->getColumnListing($tableName))
         );
     }

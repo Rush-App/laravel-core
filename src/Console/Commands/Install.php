@@ -20,8 +20,6 @@ class Install extends Command
      */
     protected $description = 'Install requirements and publish files.';
 
-    protected $progressBar;
-
     /**
      * Execute the console command.
      *
@@ -29,19 +27,19 @@ class Install extends Command
      */
     public function handle()
     {
-        $this->progressBar = $this->output->createProgressBar();
-
-        $this->progressBar->start();
+        $this->output->progressStart(3);
 
         $this->info(' Core installation started. Please wait...');
-        $this->progressBar->advance();
+        $this->output->progressAdvance(2);
 
         $this->line(' Publishing configs, views, js and css files');
-        $this->executeArtisanProcess('vendor:publish', [
+        $this->call('vendor:publish', [
             '--provider' => 'RushApp\Core\CoreServiceProvider',
             '--tag' => 'minimum',
         ]);
 
+        $this->output->progressAdvance(3);
+        $this->output->progressFinish();
 
         return 0;
     }

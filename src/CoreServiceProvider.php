@@ -43,7 +43,7 @@ class CoreServiceProvider extends ServiceProvider
 
     private function loadConfigs()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/boilerplate.php', 'boilerplate');
+        $this->mergeConfigFrom(__DIR__.'/../config/rushapp_core.php', 'rushapp_core');
     }
 
     private function publishFiles()
@@ -51,7 +51,13 @@ class CoreServiceProvider extends ServiceProvider
         $configFiles = [__DIR__.'/../config' => config_path()];
         $languageFiles = [__DIR__.'/../resources/lang' => resource_path('lang/vendor/core')];
 
+        $minimum = array_merge(
+            $configFiles,
+            $languageFiles
+        );
+
         $this->publishes($configFiles, 'config');
         $this->publishes($languageFiles, 'lang');
+        $this->publishes($minimum, 'minimum');
     }
 }
