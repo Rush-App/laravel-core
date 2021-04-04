@@ -153,4 +153,4 @@ Note that you should use "language_id" key for relation with languages table.
  It returns JWT token (['token' => 'test-token']). To perform authorization request you need to set "email" and "password" fields.
 
 ## P.S.
-Detailed examples can be found here: https://github.com/Rush-App/core-example
+Detailed examples can be found here: https://github.com/Rush-App/laravel-core-example
