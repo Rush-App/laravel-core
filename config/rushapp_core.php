@@ -17,4 +17,5 @@ return [
         'core' => 'core',
     ],
     'user_model' => \RushApp\Core\Models\User::class,
+    'default_language' => 'en',
 ];

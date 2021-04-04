@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use RushApp\Core\Models\Language;
 
 class CreateLanguagesTable extends Migration
 {
@@ -17,6 +18,8 @@ class CreateLanguagesTable extends Migration
             $table->id();
             $table->string('name')->unique();
         });
+
+        Language::query()->create(['name' => config('rushapp_core.default_language')]);
     }
 
     /**
