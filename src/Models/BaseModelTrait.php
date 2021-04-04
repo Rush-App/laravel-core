@@ -4,6 +4,7 @@ namespace RushApp\Core\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -42,8 +43,8 @@ trait BaseModelTrait
         //adding data from main table
         $query->addSelect($this->tablePluralName.'.*');
 
-        $this->addWithData($query, $requestParameters, $withRelationNames);
         $this->addQueryOptions($query, $requestParameters);
+        $this->addWithData($query, $requestParameters, $withRelationNames);
 
         return $query;
     }
@@ -64,6 +65,7 @@ trait BaseModelTrait
             foreach ($requestedWithParameters as $withParameter) {
                 if (in_array($withParameter['name'], $withRelationNames) && method_exists($this, $withParameter['name'])) {
                     $withRelations[$withParameter['name']] = function ($q) use ($withParameter) {
+                        // TODO: Fix hasMany relation in "with" query
                         if (isset($withParameter['values'])) {
                             $tableName = Str::plural($withParameter['name']);
                             $values = $this->filterExistingColumnsInTable($withParameter['values'], $tableName);
@@ -74,6 +76,13 @@ trait BaseModelTrait
                             $q->select('*');
                         }
                     };
+                }
+            }
+
+            foreach (array_keys($withRelations) as $relationName) {
+                $withRelation = $this->modelClass::$relationName();
+                if ($withRelation instanceof BelongsTo) {
+                    $query->addSelect($withRelation->getForeignKeyName());
                 }
             }
             $query->with($withRelations);
