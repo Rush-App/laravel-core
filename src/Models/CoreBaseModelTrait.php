@@ -54,12 +54,10 @@ trait CoreBaseModelTrait
     /**
      * set the initial parameters from the name of the model received from the controller
      * (the name of the model must be indicated in each controller)
-     *
-     * @param string|null $modelClass - to rewrite class of model
      */
-    protected function initBaseModel(string $modelClass = null): void
+    protected function initializeCoreBaseModelTrait(): void
     {
-        $this->modelClass = $modelClass ? $modelClass : static::class;
+        $this->modelClass = static::class;
         $this->modelTranslationClass = $this->modelClass.'Translation';
 
         $this->tablePluralName = $this->modelClass::getTable();

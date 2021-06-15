@@ -16,8 +16,9 @@ class CreateRoleActionTable extends Migration
         Schema::create('role_action', function (Blueprint $table) {
             $table->id();
             $table->foreignId('role_id')->constrained()->onDelete('cascade');
-            $table->foreignId('property_id')->constrained()->onDelete('cascade');
             $table->foreignId('action_id')->constrained()->onDelete('cascade');
+            $table->boolean('is_owner')->default(false);
+            $table->string('excluded_fields')->nullable();
         });
     }
 

@@ -14,7 +14,6 @@ abstract class BaseModel extends Model
 
     public function __construct(array $attributes = [])
     {
-        $this->initBaseModel();
         parent::__construct($attributes);
 
         $this->userActionsService = resolve(UserActionsService::class);
