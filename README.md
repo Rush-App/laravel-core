@@ -128,6 +128,8 @@ Note that you should use "language_id" key for relation with languages table.
  
  - "with" Example: http://127.0.0.1:8000/posts?with=user:id,email|categories:id,title . 
      Where "user" and "categories" are model relation names and all parameters after ":" are relation fields.
+   NOTE: If you want to get specified fields "id" field is required or you can keep it without any specific 
+   fields to get all entity fields
 
  - "limit" Example: http://127.0.0.1:8000/posts?limit=2
 
