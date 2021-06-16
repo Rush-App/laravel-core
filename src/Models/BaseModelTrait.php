@@ -2,11 +2,14 @@
 
 namespace RushApp\Core\Models;
 
+use App\Models\Post\Post;
+use App\Models\Post\PostTranslation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Exceptions\CoreHttpException;
@@ -31,17 +34,15 @@ trait BaseModelTrait
         }
 
         /** @var Builder $query */
-        $query = class_exists($this->modelTranslationClass)
-            ? $this->getTranslationQuery($requestParameters['language_id'])
-            : (new $this->modelClass)->query();
-
-        //adding data from translation main table
-        if (class_exists($this->modelTranslationClass)) {
-            $query->addSelect($this->getTranslationTableName().'.*');
-        }
+        $query = (new $this->modelClass)->query();
 
         //adding data from main table
         $query->addSelect($this->tablePluralName.'.*');
+        if ($this->modelTranslationClass) {
+            $query->addSelect($this->getTranslationTableName().'.*')
+                ->leftJoin($this->getTranslationTableName(), $this->getTranslationTableName().'.'.$this->getNameForeignKeyForTranslationTable(), '=', $this->tablePluralName.'.id')
+                ->where('language_id', request()->get('language_id'));
+        }
 
         $this->addQueryOptions($query, $requestParameters);
         $this->addWithData($query, $requestParameters, $withRelationNames);
@@ -64,7 +65,7 @@ trait BaseModelTrait
             $withRelations = [];
             foreach ($requestedWithParameters as $withParameter) {
                 if (in_array($withParameter['name'], $withRelationNames) && method_exists($this, $withParameter['name'])) {
-                    $withRelations[$withParameter['name']] = function ($q) use ($withParameter) {
+                    $withRelations[$withParameter['name']] = function ($q) use ($withParameter, $requestParameters) {
                         // TODO: Fix hasMany relation in "with" query
                         if (isset($withParameter['values'])) {
                             $tableName = Str::plural($withParameter['name']);
@@ -85,6 +86,7 @@ trait BaseModelTrait
                     $query->addSelect($withRelation->getForeignKeyName());
                 }
             }
+
             $query->with($withRelations);
         }
     }

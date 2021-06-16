@@ -2,9 +2,11 @@
 
 namespace RushApp\Core\Models;
 
+use App\Models\Post\PostTranslation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +27,7 @@ trait CoreBaseModelTrait
      * translation table name (example: CountryTranslation)
      * @var string
      */
-    protected string $modelTranslationClass;
+    protected ?string $modelTranslationClass;
 
     /**
      * table singular name in the database (example: model - Country, $tableSingularName - country)
@@ -58,7 +60,7 @@ trait CoreBaseModelTrait
     protected function initializeCoreBaseModelTrait(): void
     {
         $this->modelClass = static::class;
-        $this->modelTranslationClass = $this->modelClass.'Translation';
+        $this->modelTranslationClass = class_exists($this->modelClass.'Translation') ? $this->modelClass.'Translation': null;
 
         $this->tablePluralName = $this->modelClass::getTable();
         $this->tableSingularName = Str::singular($this->tablePluralName);
@@ -79,6 +81,11 @@ trait CoreBaseModelTrait
         );
     }
 
+    public function current_translation(): HasOne
+    {
+        return $this->hasOne($this->modelTranslationClass)->where('language_id', request()->get('language_id'));
+    }
+
     protected function getTablePluralName(): string
     {
         return $this->tablePluralName;
@@ -87,26 +94,6 @@ trait CoreBaseModelTrait
     protected function getTranslationTableName(): string
     {
         return $this->tableTranslationName;
-    }
-
-    /**
-     * returns a collection of model records with translations
-     * @param int $languageId
-     *
-     * @return Builder
-     */
-    protected function getTranslationQuery(int $languageId): Builder
-    {
-        $translationsTableName = $this->getTranslationTableName();
-
-        return $this->modelClass::leftJoin(
-            $translationsTableName,
-            $this->tablePluralName.'.id',
-            $translationsTableName.'.'.$this->getNameForeignKeyForTranslationTable()
-        )->where(function ($query) use ($translationsTableName, $languageId) {
-            $query->where($translationsTableName.'.'.ModelRequestParameters::LANGUAGE_FOREIGN_KEY, $languageId)
-                ->orWhereNull(ModelRequestParameters::LANGUAGE_FOREIGN_KEY);
-        });
     }
 
     /**
@@ -164,11 +151,7 @@ trait CoreBaseModelTrait
      */
     protected function isTranslatable(): bool
     {
-        $foreignKeyName = $this->getNameForeignKeyForTranslationTable();
-        $isForeignKeyExist = $this->isColumnExistInTable($foreignKeyName, $this->getTranslationTableName());
-        $isLanguageIdExist = $this->isColumnExistInTable($foreignKeyName, $this->getTranslationTableName());
-
-        return class_exists($this->modelTranslationClass) && $isForeignKeyExist && $isLanguageIdExist;
+        return !is_null($this->modelTranslationClass);
     }
 
     /**

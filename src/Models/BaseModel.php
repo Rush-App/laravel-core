@@ -3,6 +3,7 @@
 namespace RushApp\Core\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use RushApp\Core\Services\UserActionsService;
 
@@ -11,10 +12,18 @@ abstract class BaseModel extends Model
     use BaseModelTrait;
 
     protected UserActionsService $userActionsService;
+    
+    protected $hidden = [
+        'current_translation',
+    ];
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
+
+        if ($this->modelTranslationClass) {
+            $this->with[] = 'current_translation';
+        }
 
         $this->userActionsService = resolve(UserActionsService::class);
     }
@@ -84,5 +93,22 @@ abstract class BaseModel extends Model
         }
 
         return true;
+    }
+
+    public function toArray()
+    {
+        $data = parent::toArray();
+        $translationFields = [];
+        if ($this->modelTranslationClass) {
+            $translationFields = Arr::except($this->current_translation->toArray(), [
+                'id',
+                'language_id',
+                'created_at',
+                'updated_at',
+                $this->current_translation()->getForeignKeyName(),
+            ]);
+        }
+
+        return array_merge($data, $translationFields);
     }
 }
