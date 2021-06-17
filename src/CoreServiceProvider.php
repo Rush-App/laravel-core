@@ -6,6 +6,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RushApp\Core\Console\Commands\Install;
 use RushApp\Core\Middleware\CheckUserAction;
+use RushApp\Core\Middleware\SetLanguage;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -15,6 +16,7 @@ class CoreServiceProvider extends ServiceProvider
 
     private array $middlewareAliases = [
         'core.check-user-action' => CheckUserAction::class,
+        'core.set-language' => SetLanguage::class,
     ];
 
     /**

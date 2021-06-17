@@ -5,6 +5,7 @@ namespace RushApp\Core\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Services\UserActionsService;
 
 abstract class BaseModel extends Model
@@ -21,7 +22,7 @@ abstract class BaseModel extends Model
     {
         parent::__construct($attributes);
 
-        if ($this->modelTranslationClass) {
+        if ($this->modelTranslationClass && request()->get(ModelRequestParameters::WITH)) {
             $this->with[] = 'current_translation';
         }
 
@@ -99,7 +100,7 @@ abstract class BaseModel extends Model
     {
         $data = parent::toArray();
         $translationFields = [];
-        if ($this->modelTranslationClass) {
+        if ($this->modelTranslationClass && $this->current_translation) {
             $translationFields = Arr::except($this->current_translation->toArray(), [
                 'id',
                 'language_id',
