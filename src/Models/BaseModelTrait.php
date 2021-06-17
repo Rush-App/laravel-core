@@ -36,13 +36,15 @@ trait BaseModelTrait
         /** @var Builder $query */
         $query = (new $this->modelClass)->query();
 
-        //adding data from main table
-        $query->addSelect($this->tablePluralName.'.*');
         if ($this->modelTranslationClass) {
             $query->addSelect($this->getTranslationTableName().'.*')
                 ->leftJoin($this->getTranslationTableName(), $this->getTranslationTableName().'.'.$this->getNameForeignKeyForTranslationTable(), '=', $this->tablePluralName.'.id')
                 ->where('language_id', request()->get('language_id'));
         }
+
+        //adding data from main table
+        // Do not change position. Need to be after all additional selections
+        $query->addSelect($this->tablePluralName.'.*');
 
         $this->addQueryOptions($query, $requestParameters);
         $this->addWithData($query, $requestParameters, $withRelationNames);
