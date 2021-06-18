@@ -26,10 +26,10 @@ trait BaseModelTrait
      * @param array $withRelationNames
      * @return Builder
      */
-    public function getQueryBuilder(array $requestParameters, array $withRelationNames): Builder
+    public function getQueryBuilder(array $requestParameters, array $withRelationNames, bool $checkForOwner = true): Builder
     {
         //checking for the issuance of data that belongs to the current user
-        if ($this->isOwner()) {
+        if ($checkForOwner && $this->isOwner()) {
             $requestParameters['user_id'] = Auth::id();
         }
 
