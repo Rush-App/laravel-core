@@ -24,6 +24,7 @@ trait BaseModelTrait
      *
      * @param array $requestParameters
      * @param array $withRelationNames
+     * @param bool $checkForOwner
      * @return Builder
      */
     public function getQueryBuilder(array $requestParameters, array $withRelationNames, bool $checkForOwner = true): Builder
