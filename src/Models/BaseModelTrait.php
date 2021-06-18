@@ -7,6 +7,7 @@ use App\Models\Post\PostTranslation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -39,8 +40,10 @@ trait BaseModelTrait
 
         if ($this->modelTranslationClass) {
             $query->addSelect($this->getTranslationTableName().'.*')
-                ->leftJoin($this->getTranslationTableName(), $this->getTranslationTableName().'.'.$this->getNameForeignKeyForTranslationTable(), '=', $this->tablePluralName.'.id')
-                ->where('language_id', request()->get('language_id'));
+                ->leftJoin($this->getTranslationTableName(), function (JoinClause $join) {
+                    $join->on($this->getTranslationTableName().'.'.$this->getNameForeignKeyForTranslationTable(), '=', $this->tablePluralName.'.id')
+                        ->where($this->getTranslationTableName().'.'.ModelRequestParameters::LANGUAGE_FOREIGN_KEY, '=', request()->get('language_id'));
+                });
         }
 
         //adding data from main table
