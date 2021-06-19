@@ -56,9 +56,9 @@ trait BaseModelTrait
         return $query;
     }
 
-    public function getQueryBuilderOne(array $requestParameters, int $entityId, array $withRelationNames): Builder
+    public function getQueryBuilderOne(array $requestParameters, int $entityId, array $withRelationNames, bool $checkForOwner = true): Builder
     {
-        $query = $this->getQueryBuilder($requestParameters, $withRelationNames);
+        $query = $this->getQueryBuilder($requestParameters, $withRelationNames, $checkForOwner);
 
         return $query->where($this->getTable().'.id', $entityId);
     }
