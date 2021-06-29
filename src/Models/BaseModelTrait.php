@@ -2,19 +2,17 @@
 
 namespace RushApp\Core\Models;
 
-use App\Models\Post\Post;
-use App\Models\Post\PostTranslation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Exceptions\CoreHttpException;
 use RushApp\Core\Services\LoggingService;
+use RushApp\Core\Services\UserActionsService;
 
 trait BaseModelTrait
 {
@@ -32,7 +30,7 @@ trait BaseModelTrait
     {
         //checking for the issuance of data that belongs to the current user
         if ($checkForOwner && $this->isOwner()) {
-            $requestParameters['user_id'] = Auth::id();
+            $requestParameters[$this->getOwnerKey()] = Auth::id();
         }
 
         /** @var Builder $query */
@@ -54,6 +52,11 @@ trait BaseModelTrait
         $this->addWithData($query, $requestParameters, $withRelationNames);
 
         return $query;
+    }
+
+    public function isOwner(): bool
+    {
+        return resolve(UserActionsService::class)->checkOwnership($this);
     }
 
     public function getQueryBuilderOne(array $requestParameters, int $entityId, array $withRelationNames, bool $checkForOwner = true): Builder
@@ -189,7 +192,7 @@ trait BaseModelTrait
      */
     public function createOne(array $requestParameters): array
     {
-        $requestParameters['user_id'] = Auth::id();
+        $requestParameters[$this->getOwnerKey()] = Auth::id();
 
         try {
             /** @var Model|static $mainModel */
@@ -213,11 +216,10 @@ trait BaseModelTrait
      *
      * @param array $requestParameters
      * @param int $entityId
-     * @param string $columnName - column name to check whether a record matches a specific user
      * @param $valueForColumnName - column value to check whether a record matches a specific user
      * @return array
      */
-    public function updateOne(array $requestParameters, int $entityId, $valueForColumnName, string $columnName = 'user_id'): array
+    public function updateOne(array $requestParameters, int $entityId, $valueForColumnName): array
     {
         $model = $this->getOneRecord($entityId);
         if (!$model) {
@@ -225,7 +227,7 @@ trait BaseModelTrait
             throw new CoreHttpException(404, __('core::error_messages.not_found'));
         }
 
-        if (!$this->canDoActionWithModel($model, $columnName, $valueForColumnName)) {
+        if (!$this->canDoActionWithModel($model, $this->getOwnerKey(), $valueForColumnName)) {
             LoggingService::notice('Cannot update. Permission denied for model'.static::class.' '.$entityId);
             throw new CoreHttpException(403, __('core::error_messages.permission_denied'));
         }
@@ -237,12 +239,11 @@ trait BaseModelTrait
     /**
      * Delete one record with checking for compliance of the record to the user
      *
-     * @param string $columnName - column name to check whether a record matches a specific user
      * @param $valueForColumnName - column value to check whether a record matches a specific user
      * @param int $entityId
      * @return void
      */
-    public function deleteOne(int $entityId, $valueForColumnName, string $columnName = 'user_id'): void
+    public function deleteOne(int $entityId, $valueForColumnName): void
     {
         /** @var Model $model */
         $model = $this->getOneRecord($entityId);
@@ -251,7 +252,7 @@ trait BaseModelTrait
             throw new CoreHttpException(404, __('core::error_messages.not_found'));
         }
 
-        if (!$this->canDoActionWithModel($model, $columnName, $valueForColumnName)) {
+        if (!$this->canDoActionWithModel($model, $this->getOwnerKey(), $valueForColumnName)) {
             LoggingService::notice('Cannot delete. Permission denied for model'.static::class.' '.$entityId);
             throw new CoreHttpException(403, __('core::error_messages.permission_denied'));
         }
@@ -262,5 +263,10 @@ trait BaseModelTrait
             LoggingService::critical('Cannot delete. Model '.static::class.' '.$entityId.' '.$e->getMessage());
             throw new CoreHttpException(409, __('core::error_messages.destroy_error'));
         }
+    }
+
+    public function getOwnerKey(): string
+    {
+        return property_exists($this, 'owner_key') ?? 'user_id';
     }
 }

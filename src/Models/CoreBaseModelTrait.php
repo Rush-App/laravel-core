@@ -164,7 +164,7 @@ trait CoreBaseModelTrait
      */
     protected function canDoActionWithModel(object $model, string $columnName, $valueForColumnName): bool {
         $userActionsService = resolve(UserActionsService::class);
-        if ($userActionsService->canUserPerformAction(request())) {
+        if ($userActionsService->canUserPerformAction()) {
             return true;
         }
 

@@ -3,15 +3,15 @@
 namespace RushApp\Core\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Str;
 use RushApp\Core\Enums\ModelRequestParameters;
 use RushApp\Core\Models\BaseModelTrait;
 
-abstract class BaseController extends Controller
+abstract class BaseCrudController extends Controller
 {
     protected string $modelClassController;
     protected Model|BaseModelTrait $baseModel;
@@ -19,12 +19,15 @@ abstract class BaseController extends Controller
     protected ?string $updateRequestClass = null;
     protected array $withRelationNames = [];
 
-    public function __construct(Request $request)
+    public function __construct()
     {
-        $parameterName = Str::singular(resolve($this->modelClassController)->getTable());
-        $entityId = $request->route($parameterName);
-
+        $entityId = $this->getEntityId();
         $this->baseModel = $entityId ? $this->modelClassController::find($entityId) : new $this->modelClassController;
+    }
+
+    protected function getEntityId(): ?int
+    {
+        return request()->route()->parameters()[0] ?? null;
     }
 
     public function index(Request $request)
@@ -88,12 +91,12 @@ abstract class BaseController extends Controller
         }
     }
 
-    protected function successResponse($responseData)
+    protected function successResponse($responseData): JsonResponse
     {
-        return response()->json($responseData, 200);
+        return response()->json($responseData);
     }
 
-    protected function responseWithError(string $error, int $code)
+    protected function responseWithError(string $error, int $code): JsonResponse
     {
         return response()->json(['error' => $error], $code);
     }

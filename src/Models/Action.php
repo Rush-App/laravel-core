@@ -10,16 +10,14 @@ use RushApp\Core\Database\Factories\ActionFactory;
  * Class Action
  *
  * @property int $id
- * @property string $action_name
- * @property string $entity_name
+ * @property string $name
  */
 class Action extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'action_name',
-        'entity_name',
+        'name',
     ];
 
     public $timestamps = false;

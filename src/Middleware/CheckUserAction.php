@@ -20,7 +20,7 @@ class CheckUserAction
 
     public function handle(Request $request, Closure $next)
     {
-        if (!$this->userActionsService->canUserPerformAction($request)) {
+        if (!$this->userActionsService->canUserPerformAction()) {
             abort(
                 config('rushapp_core.http_statuses.forbidden'),
                 __('Forbidden')

@@ -21,31 +21,8 @@ class ActionFactory extends Factory
      */
     public function definition()
     {
-        $actionNames = config('rushapp_core.action_names', []);
-
         return [
-            'action_name' => $this->faker->randomElement($actionNames),
-            'entity_name' => $this->faker->word,
+            'name' => $this->faker->word,
         ];
-    }
-
-    /**
-     * @param string $entityName
-     *
-     * @return array|Action[]
-     */
-    public function createAllActionsForEntity(string $entityName): array
-    {
-        $actionNames = config('rushapp_core.action_names', []);
-
-        $actions = [];
-        foreach ($actionNames as $actionName) {
-            $actions[] = static::create([
-                'entity_name' => $entityName,
-                'action_name' => $actionName,
-            ]);
-        }
-
-        return $actions;
     }
 }

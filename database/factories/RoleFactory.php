@@ -34,23 +34,6 @@ class RoleFactory extends Factory
         ];
     }
 
-    public function createRoleWithAllActions(array $entityNames): Role
-    {
-        /** @var Role $role */
-        $role = static::create();
-
-        $actions = [];
-        foreach ($entityNames as $entityName) {
-            $actions = array_merge(
-                Action::factory()->createAllActionsForEntity($entityName),
-                $actions
-            );
-        }
-        $role->actions()->saveMany($actions);
-
-        return $role;
-    }
-
     private function getAvailableRoles(): array
     {
         return [
