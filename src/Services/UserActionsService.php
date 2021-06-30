@@ -61,6 +61,7 @@ class UserActionsService
         $cacheTTL = config('rushapp_core.default_cache_ttl');
         return Cache::remember("user-actions.$userId", $cacheTTL, function () use ($userId) {
             return Action::query()
+                ->select('ra.is_owner', 'actions.name as name')
                 ->join('role_action as ra', 'ra.action_id', '=', 'actions.id')
                 ->join('roles as r', 'r.id', '=', 'ra.role_id')
                 ->join('user_role as ur', 'ur.role_id', '=', 'r.id')
