@@ -10,7 +10,12 @@ use RushApp\Core\Models\Language;
 
 class SetLanguage
 {
-    public function handle(Request $request, Closure $next)
+    /**
+     * @param Request $request
+     * @param Closure $next
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next): mixed
     {
         $languageName = $request->header('Language');
 

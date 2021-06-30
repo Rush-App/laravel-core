@@ -2,7 +2,9 @@
 
 namespace RushApp\Core\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Monolog\Logger;
@@ -10,18 +12,26 @@ use RushApp\Core\Exceptions\CoreHttpException;
 use RushApp\Core\Models\CoreBaseModelTrait;
 use RushApp\Core\Services\LoggingService;
 
-abstract class BaseAuthController extends BaseController
+abstract class BaseAuthController extends Controller
 {
-    use CoreBaseModelTrait;
+    use CoreBaseModelTrait, ResponseTrait;
 
     protected string $guard;
 
-    public function login(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function login(Request $request): JsonResponse
     {
         return $this->loginAttempt($request->only(['email', 'password']));
     }
 
-    public function registerAttempt(Request $request)
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function registerAttempt(Request $request): JsonResponse
     {
         try {
             $userClass = $this->getUserClass();
@@ -39,16 +49,8 @@ abstract class BaseAuthController extends BaseController
         }
     }
 
-    protected function loginAttempt(array $credentials)
-    {
-        if (!$token = Auth::guard($this->guard)->attempt($credentials)) {
-            return $this->responseWithError(__('response_messages.incorrect_login'), 403);
-        }
-
-        return $this->successResponse(['token' => $token]);
-    }
-
-    public function refreshToken()
+    /** @return JsonResponse */
+    public function refreshToken(): JsonResponse
     {
         try {
             $token = Auth::guard($this->guard)->refresh();
@@ -59,14 +61,29 @@ abstract class BaseAuthController extends BaseController
         return $this->successResponse(['token' => $token]);
     }
 
-    public function logout()
+    /** @return JsonResponse */
+    public function logout(): JsonResponse
     {
         Auth::guard($this->guard)->logout();
 
         return $this->successResponse(['message' => __('response_messages.logout')]);
     }
 
-    protected function getUserClass(): string
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    private function loginAttempt(array $credentials): JsonResponse
+    {
+        if (!$token = Auth::guard($this->guard)->attempt($credentials)) {
+            return $this->responseWithError(__('response_messages.incorrect_login'), 403);
+        }
+
+        return $this->successResponse(['token' => $token]);
+    }
+
+    /** @return string */
+    private function getUserClass(): string
     {
         return config('rushapp_core.user_model');
     }

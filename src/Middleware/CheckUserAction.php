@@ -8,9 +8,7 @@ use RushApp\Core\Services\UserActionsService;
 
 class CheckUserAction
 {
-    /**
-     * @var UserActionsService
-     */
+    /** @var UserActionsService */
     private UserActionsService $userActionsService;
 
     public function __construct(UserActionsService $userActionsService)
@@ -18,7 +16,12 @@ class CheckUserAction
         $this->userActionsService = $userActionsService;
     }
 
-    public function handle(Request $request, Closure $next)
+    /**
+     * @param Request $request
+     * @param Closure $next
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next): mixed
     {
         if (!$this->userActionsService->canUserPerformAction()) {
             abort(
@@ -29,6 +32,4 @@ class CheckUserAction
 
         return $next($request);
     }
-
-
 }

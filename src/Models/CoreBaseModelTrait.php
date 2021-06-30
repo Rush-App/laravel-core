@@ -20,38 +20,57 @@ trait CoreBaseModelTrait
      * controller model name
      * @var string
      */
-    protected string $modelClass;
+    private string $modelClass;
 
     /**
      * You should always use these model names.
      * translation table name (example: CountryTranslation)
      * @var string
      */
-    protected ?string $modelTranslationClass;
+    private ?string $modelTranslationClass;
 
     /**
      * table singular name in the database (example: model - Country, $tableSingularName - country)
      * @var string
      */
-    protected string $tableSingularName;
+    private string $tableSingularName;
 
     /**
      * table plural name in the database (example: model - Country, $tablePluralName - countries)
      * @var string
      */
-    protected string $tablePluralName;
+    private string $tablePluralName;
 
     /**
      * table translation name for $modelTranslationClass (example: table - countries, $tableTranslationName - country_translations)
      * @var string
      */
-    protected string $tableTranslationName;
+    private string $tableTranslationName;
+
+    /** @return string */
+    public function getTableSingularName(): string
+    {
+        return $this->tableSingularName;
+    }
 
     /**
-     * If model belongs to user (have user_id field), this model can be updated, deleted by this user (owner).
-     * @var bool
+     * add translation data
+     * @return HasMany
      */
-    public bool $canBeManagedByOwner = true;
+    public function translations(): HasMany
+    {
+        return $this->hasMany(
+            $this->modelTranslationClass,
+            $this->getNameForeignKeyForTranslationTable(),
+            $this->getKeyName()
+        );
+    }
+
+    /** @return HasOne */
+    public function current_translation(): HasOne
+    {
+        return $this->hasOne($this->modelTranslationClass)->where('language_id', request()->get('language_id'));
+    }
 
     /**
      * set the initial parameters from the name of the model received from the controller
@@ -67,31 +86,14 @@ trait CoreBaseModelTrait
         $this->tableTranslationName = $this->getTableSingularName().'_translations';
     }
 
-    public function getTableSingularName(): string
-    {
-        return $this->tableSingularName;
-    }
-
-    public function translations(): HasMany
-    {
-        return $this->hasMany(
-            $this->modelTranslationClass,
-            $this->getNameForeignKeyForTranslationTable(),
-            $this->getKeyName()
-        );
-    }
-
-    public function current_translation(): HasOne
-    {
-        return $this->hasOne($this->modelTranslationClass)->where('language_id', request()->get('language_id'));
-    }
-
-    protected function getTablePluralName(): string
+    /** @return string */
+    private function getTablePluralName(): string
     {
         return $this->tablePluralName;
     }
 
-    protected function getTranslationTableName(): string
+    /** @return string */
+    private function getTranslationTableName(): string
     {
         return $this->tableTranslationName;
     }
@@ -100,7 +102,7 @@ trait CoreBaseModelTrait
      * @param int $id - ID record to get
      * @return mixed
      */
-    protected function getOneRecord(int $id)
+    private function getOneRecord(int $id)
     {
         return $this->modelClass::find($id);
     }
@@ -113,7 +115,7 @@ trait CoreBaseModelTrait
      *
      * @return string - Like this: base_invoice_id
      */
-    protected function getNameForeignKeyForTranslationTable(): string
+    private function getNameForeignKeyForTranslationTable(): string
     {
         return $this->getTableSingularName().'_id' ;
     }
@@ -125,7 +127,7 @@ trait CoreBaseModelTrait
      * @param array $dataToUpdate - data for updating
      * @return array
      */
-    protected function updateOneRecord(Model $model, array $dataToUpdate)
+    private function updateOneRecord(Model $model, array $dataToUpdate)
     {
         /** @var Model|static $mainModel */
         $mainModel = tap($model)->update($dataToUpdate);
@@ -140,7 +142,6 @@ trait CoreBaseModelTrait
 
             $modelAttributes = array_merge($translationModel->getAttributes(), $modelAttributes);
         }
-
         return $modelAttributes;
     }
 
@@ -149,7 +150,7 @@ trait CoreBaseModelTrait
      *
      * @return bool
      */
-    protected function isTranslatable(): bool
+    private function isTranslatable(): bool
     {
         return !is_null($this->modelTranslationClass);
     }
@@ -157,24 +158,21 @@ trait CoreBaseModelTrait
     /**
      * Check if this record matches this user
      *
-     * @param object $model - specific record from the database
-     * @param string $columnName - column name to check whether a record matches a specific user
-     * @param $valueForColumnName - column value to check whether a record matches a specific user
+     * @param self $model - specific record from the database
+     * @param int $ownerId - column value to check whether a record matches a specific user
      * @return bool
      */
-    protected function canDoActionWithModel(object $model, string $columnName, $valueForColumnName): bool {
+    private function canDoActionWithModel(self $model, int $ownerId): bool
+    {
         $userActionsService = resolve(UserActionsService::class);
         if ($userActionsService->canUserPerformAction()) {
             return true;
         }
+        $columnName = $model->getOwnerKey();
 
-        if ($this->canBeManagedByOwner) {
-            return $this->isColumnExistInTable($columnName, $this->getTablePluralName())
-                ? $model->{$columnName} === $valueForColumnName
-                : false;
-        }
-
-        return false;
+        return $this->isColumnExistInTable($columnName, $this->getTablePluralName())
+            ? $model->{$columnName} === $ownerId
+            : false;
     }
 
     /**
@@ -183,24 +181,29 @@ trait CoreBaseModelTrait
      * @param array $params - column names in the table (use for filter 'where')
      * @return array
      */
-    protected function filteringForParams(array $params): array
+    private function filteringForParams(array $params): array
     {
-        return array_filter($params, fn($v, $k) => ($this->isColumnExistInTable($k, $this->getTablePluralName()) || $this->isColumnExistInTable($k, $this->getTranslationTableName())), ARRAY_FILTER_USE_BOTH);
+        return array_filter($params, fn($v, $k) => (
+            $this->isColumnExistInTable($k, $this->getTablePluralName()) || $this->isColumnExistInTable($k, $this->getTranslationTableName())
+        ), ARRAY_FILTER_USE_BOTH);
     }
 
     /**
      * checking for the existence of column names in the table
-     *
      * @param string $columnName - column name in the table
      * @param string $tableName
      * @return bool
      */
-    protected function isColumnExistInTable(string $columnName, string $tableName): bool
+    private function isColumnExistInTable(string $columnName, string $tableName): bool
     {
        return $this->getTableColumns($tableName)->contains($columnName);
     }
 
-    protected function getTableColumns(string $tableName): Collection
+    /**
+     * @param string $tableName
+     * @return Collection
+     */
+    private function getTableColumns(string $tableName): Collection
     {
         return Cache::remember(
             "$tableName-columns",
@@ -217,7 +220,7 @@ trait CoreBaseModelTrait
      * @param string $fields
      * @return array
      */
-    protected function getValueForExistingTableColumns (string $fields): array
+    private function getValueForExistingTableColumns (string $fields): array
     {
         $resultArrForSelect = [];
         $modelTranslationClassExist = class_exists($this->modelTranslationClass);
@@ -241,7 +244,12 @@ trait CoreBaseModelTrait
         return $resultArrForSelect;
     }
 
-    protected function filterExistingColumnsInTable(array $fields, string $tableName): array
+    /**
+     * @param array $fields
+     * @param string $tableName
+     * @return array
+     */
+    private function filterExistingColumnsInTable(array $fields, string $tableName): array
     {
         $filteredFields = [];
         foreach ($fields as $field) {
@@ -249,11 +257,16 @@ trait CoreBaseModelTrait
                 $filteredFields[] = $field;
             }
         }
-
         return $filteredFields;
     }
 
-    protected function parseParameterWithAdditionalValues(string $parametersString, bool $shouldCheckColumnsInTable = true): Collection
+    /**
+     * Example: http://127.0.0.1:8000/test?where_in=year:2018,2014,2020|user_id:2,2,5,6
+     * @param string $parametersString
+     * @param bool $shouldCheckColumnsInTable
+     * @return Collection
+     */
+    private function parseParameterWithAdditionalValues(string $parametersString, bool $shouldCheckColumnsInTable = true): Collection
     {
         $parameters = explode('|', $parametersString);
         $parsedParameters = collect();
@@ -273,7 +286,6 @@ trait CoreBaseModelTrait
                 $parsedParameters->add(['name' => $parameter]);
             }
         }
-
         return $parsedParameters;
     }
 }

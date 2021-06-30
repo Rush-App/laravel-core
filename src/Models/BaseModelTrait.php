@@ -19,8 +19,16 @@ trait BaseModelTrait
     use CoreBaseModelTrait;
 
     /**
+     * get name for related field created by owner (user_id as default)
+     * @return string
+     */
+    public function getOwnerKey(): string
+    {
+        return property_exists($this, 'owner_key') ? $this->owner_key : 'user_id';
+    }
+
+    /**
      * Return a collections of one or more records with or without translation
-     *
      * @param array $requestParameters
      * @param array $withRelationNames
      * @param bool $checkForOwner
@@ -37,6 +45,7 @@ trait BaseModelTrait
         $query = (new $this->modelClass)->query();
 
         if ($this->modelTranslationClass) {
+            // join data from translation table
             $query->addSelect($this->getTranslationTableName().'.*')
                 ->leftJoin($this->getTranslationTableName(), function (JoinClause $join) {
                     $join->on($this->getTranslationTableName().'.'.$this->getNameForeignKeyForTranslationTable(), '=', $this->tablePluralName.'.id')
@@ -54,133 +63,19 @@ trait BaseModelTrait
         return $query;
     }
 
-    public function isOwner(): bool
-    {
-        return resolve(UserActionsService::class)->checkOwnership($this);
-    }
-
+    /**
+     * Return one record with or without translation
+     * @param array $requestParameters
+     * @param int $entityId
+     * @param array $withRelationNames
+     * @param bool $checkForOwner
+     * @return Builder
+     */
     public function getQueryBuilderOne(array $requestParameters, int $entityId, array $withRelationNames, bool $checkForOwner = true): Builder
     {
         $query = $this->getQueryBuilder($requestParameters, $withRelationNames, $checkForOwner);
 
         return $query->where($this->getTable().'.id', $entityId);
-    }
-
-    protected function addWithData(Builder $query, array $requestParameters, array $withRelationNames)
-    {
-        if (!empty($requestParameters[ModelRequestParameters::WITH])) {
-            $requestedWithParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WITH], false);
-
-            $withRelations = [];
-            foreach ($requestedWithParameters as $withParameter) {
-                if (in_array($withParameter['name'], $withRelationNames) && method_exists($this, $withParameter['name'])) {
-                    $withRelations[$withParameter['name']] = function ($q) use ($withParameter, $requestParameters) {
-                        // TODO: Fix hasMany relation in "with" query
-                        if (isset($withParameter['values'])) {
-                            $tableName = Str::plural($withParameter['name']);
-                            $values = $this->filterExistingColumnsInTable($withParameter['values'], $tableName);
-
-                            $relationsFields = array_map(fn ($value) => $tableName.'.'.$value, $values);
-                            $relationsFields ? $q->select($relationsFields) : $q->select('*');
-                        } else {
-                            $q->select('*');
-                        }
-                    };
-                }
-            }
-
-            foreach (array_keys($withRelations) as $relationName) {
-                $withRelation = $this->modelClass::$relationName();
-                if ($withRelation instanceof BelongsTo) {
-                    $query->addSelect($withRelation->getForeignKeyName());
-                }
-            }
-
-            $query->with($withRelations);
-        }
-    }
-
-    protected function addQueryOptions(Builder $query, array $requestParameters)
-    {
-        //Select only this data
-        if(!empty($requestParameters[ModelRequestParameters::SELECTED_FIELDS])
-            &&!empty($select = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::SELECTED_FIELDS]))
-        ) {
-            $query->select($select);
-        }
-
-        //Sort by a given field
-        if(!empty($requestParameters[ModelRequestParameters::ORDER_BY_FIELD])) {
-            $parsedOrderParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::ORDER_BY_FIELD]);
-            if ($parsedOrderParameters->isNotEmpty()) {
-                foreach ($parsedOrderParameters as $parsedOrderParameter) {
-                    $query->orderBy($parsedOrderParameter['name'], $parsedOrderParameter['values'][0] ?? 'asc');
-                }
-            }
-        }
-
-        //give data where some field is NotNull
-        if (
-            !empty($requestParameters[ModelRequestParameters::WHERE_NOT_NULL]) &&
-            !empty($whereNotNull = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::WHERE_NOT_NULL]))
-        ) {
-            $query->whereNotNull($whereNotNull);
-        }
-
-        //give data where some field is Null
-        if (
-            !empty($requestParameters[ModelRequestParameters::WHERE_NULL]) &&
-            !empty($whereNull = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::WHERE_NULL]))
-        ) {
-            $query->whereNull($whereNull);
-        }
-
-        if (!empty($requestParameters[ModelRequestParameters::WHERE_BETWEEN])) {
-            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_BETWEEN]);
-            if ($parsedParameters->isNotEmpty()) {
-                foreach ($parsedParameters as $parsedParameter) {
-                    $query->whereBetween($parsedParameter['name'], $parsedParameter['values']);
-                }
-            }
-        }
-
-        if (!empty($requestParameters[ModelRequestParameters::WHERE_IN])) {
-            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_IN]);
-            if ($parsedParameters->isNotEmpty()) {
-                foreach ($parsedParameters as $parsedParameter) {
-                    $query->whereIn($parsedParameter['name'], $parsedParameter['values']);
-                }
-            }
-        }
-
-        if (!empty($requestParameters[ModelRequestParameters::WHERE_NOT_IN])) {
-            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_NOT_IN]);
-            if ($parsedParameters->isNotEmpty()) {
-                foreach ($parsedParameters as $parsedParameter) {
-                    $query->whereNotIn($parsedParameter['name'], $parsedParameter['values']);
-                }
-            }
-        }
-
-        //Get limited data
-        if(!empty($requestParameters[ModelRequestParameters::LIMIT])) {
-            $query->limit($requestParameters[ModelRequestParameters::LIMIT]);
-        }
-
-        if(!empty($requestParameters[ModelRequestParameters::OFFSET])) {
-            $query->offset($requestParameters[ModelRequestParameters::OFFSET]);
-        }
-
-        //Parameters for "where", under what conditions the request will be displayed
-        $rawWhereParams = Arr::except($this->filteringForParams($requestParameters), ['language_id']);
-        foreach ($rawWhereParams as $name => $value) {
-            if (preg_match('/^(<>|<|>|<\=|>\=|like)\|/', $value, $matched)) {
-                $operator = trim($matched[0], '|');
-                $query->where($name, $operator, str_replace("$operator|", '', $value));
-            } else {
-                $query->where($name, $value);
-            }
-        }
     }
 
     /**
@@ -216,10 +111,10 @@ trait BaseModelTrait
      *
      * @param array $requestParameters
      * @param int $entityId
-     * @param $valueForColumnName - column value to check whether a record matches a specific user
+     * @param $ownerId - column value to check whether a record matches a specific user
      * @return array
      */
-    public function updateOne(array $requestParameters, int $entityId, $valueForColumnName): array
+    public function updateOne(array $requestParameters, int $entityId, $ownerId): array
     {
         $model = $this->getOneRecord($entityId);
         if (!$model) {
@@ -227,7 +122,7 @@ trait BaseModelTrait
             throw new CoreHttpException(404, __('core::error_messages.not_found'));
         }
 
-        if (!$this->canDoActionWithModel($model, $this->getOwnerKey(), $valueForColumnName)) {
+        if (!$this->canDoActionWithModel($model, $ownerId)) {
             LoggingService::notice('Cannot update. Permission denied for model'.static::class.' '.$entityId);
             throw new CoreHttpException(403, __('core::error_messages.permission_denied'));
         }
@@ -239,11 +134,11 @@ trait BaseModelTrait
     /**
      * Delete one record with checking for compliance of the record to the user
      *
-     * @param $valueForColumnName - column value to check whether a record matches a specific user
+     * @param $ownerId - column value to check whether a record matches a specific user
      * @param int $entityId
      * @return void
      */
-    public function deleteOne(int $entityId, $valueForColumnName): void
+    public function deleteOne(int $entityId, $ownerId): void
     {
         /** @var Model $model */
         $model = $this->getOneRecord($entityId);
@@ -252,7 +147,7 @@ trait BaseModelTrait
             throw new CoreHttpException(404, __('core::error_messages.not_found'));
         }
 
-        if (!$this->canDoActionWithModel($model, $this->getOwnerKey(), $valueForColumnName)) {
+        if (!$this->canDoActionWithModel($model, $ownerId)) {
             LoggingService::notice('Cannot delete. Permission denied for model'.static::class.' '.$entityId);
             throw new CoreHttpException(403, __('core::error_messages.permission_denied'));
         }
@@ -265,8 +160,144 @@ trait BaseModelTrait
         }
     }
 
-    public function getOwnerKey(): string
+    /**
+     * checking is_owner in role_action table for selected request()->route()->parameters() in actions table
+     * @return bool
+     */
+    private function isOwner(): bool
     {
-        return property_exists($this, 'owner_key') ?? 'user_id';
+        return resolve(UserActionsService::class)->checkIsOwner();
+    }
+
+    /**
+     * added data from related tables
+     * @param Builder $query
+     * @param array $requestParameters
+     * @param array $withRelationNames
+     */
+    private function addWithData(Builder $query, array $requestParameters, array $withRelationNames)
+    {
+        if (!empty($requestParameters[ModelRequestParameters::WITH])) {
+            $requestedWithParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WITH], false);
+
+            $withRelations = [];
+            foreach ($requestedWithParameters as $withParameter) {
+                if (in_array($withParameter['name'], $withRelationNames) && method_exists($this, $withParameter['name'])) {
+                    $withRelations[$withParameter['name']] = function ($q) use ($withParameter, $requestParameters) {
+                        // TODO: Fix hasMany relation in "with" query
+                        if (isset($withParameter['values'])) {
+                            $tableName = Str::plural($withParameter['name']);
+                            $values = $this->filterExistingColumnsInTable($withParameter['values'], $tableName);
+
+                            $relationsFields = array_map(fn ($value) => $tableName.'.'.$value, $values);
+                            $relationsFields ? $q->select($relationsFields) : $q->select('*');
+                        } else {
+                            $q->select('*');
+                        }
+                    };
+                }
+            }
+
+            foreach (array_keys($withRelations) as $relationName) {
+                $withRelation = $this->modelClass::$relationName();
+                if ($withRelation instanceof BelongsTo) {
+                    $query->addSelect($withRelation->getForeignKeyName());
+                }
+            }
+
+            $query->with($withRelations);
+        }
+    }
+
+    /**
+     * add query options (get from request parameters)
+     * @param Builder $query
+     * @param array $requestParameters
+     */
+    private function addQueryOptions(Builder $query, array $requestParameters)
+    {
+        //Select only this data
+        if(!empty($requestParameters[ModelRequestParameters::SELECTED_FIELDS])
+            &&!empty($select = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::SELECTED_FIELDS]))
+        ) {
+            $query->select($select);
+        }
+
+        //Sort by a given field
+        if(!empty($requestParameters[ModelRequestParameters::ORDER_BY_FIELD])) {
+            $parsedOrderParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::ORDER_BY_FIELD]);
+            if ($parsedOrderParameters->isNotEmpty()) {
+                foreach ($parsedOrderParameters as $parsedOrderParameter) {
+                    $query->orderBy($parsedOrderParameter['name'], $parsedOrderParameter['values'][0] ?? 'asc');
+                }
+            }
+        }
+
+        //give data where some field is NotNull
+        if (
+            !empty($requestParameters[ModelRequestParameters::WHERE_NOT_NULL]) &&
+            !empty($whereNotNull = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::WHERE_NOT_NULL]))
+        ) {
+            $query->whereNotNull($whereNotNull);
+        }
+
+        //give data where some field is Null
+        if (
+            !empty($requestParameters[ModelRequestParameters::WHERE_NULL]) &&
+            !empty($whereNull = $this->getValueForExistingTableColumns($requestParameters[ModelRequestParameters::WHERE_NULL]))
+        ) {
+            $query->whereNull($whereNull);
+        }
+
+        //Get data with where_between
+        if (!empty($requestParameters[ModelRequestParameters::WHERE_BETWEEN])) {
+            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_BETWEEN]);
+            if ($parsedParameters->isNotEmpty()) {
+                foreach ($parsedParameters as $parsedParameter) {
+                    $query->whereBetween($parsedParameter['name'], $parsedParameter['values']);
+                }
+            }
+        }
+
+        //Get data with where_in
+        if (!empty($requestParameters[ModelRequestParameters::WHERE_IN])) {
+            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_IN]);
+            if ($parsedParameters->isNotEmpty()) {
+                foreach ($parsedParameters as $parsedParameter) {
+                    $query->whereIn($parsedParameter['name'], $parsedParameter['values']);
+                }
+            }
+        }
+
+        //Get data with where_not_in
+        if (!empty($requestParameters[ModelRequestParameters::WHERE_NOT_IN])) {
+            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_NOT_IN]);
+            if ($parsedParameters->isNotEmpty()) {
+                foreach ($parsedParameters as $parsedParameter) {
+                    $query->whereNotIn($parsedParameter['name'], $parsedParameter['values']);
+                }
+            }
+        }
+
+        //Get limited data
+        if(!empty($requestParameters[ModelRequestParameters::LIMIT])) {
+            $query->limit($requestParameters[ModelRequestParameters::LIMIT]);
+        }
+
+        //Get data with offset
+        if(!empty($requestParameters[ModelRequestParameters::OFFSET])) {
+            $query->offset($requestParameters[ModelRequestParameters::OFFSET]);
+        }
+
+        //Parameters for "where", under what conditions the request will be displayed
+        $rawWhereParams = Arr::except($this->filteringForParams($requestParameters), ['language_id']);
+        foreach ($rawWhereParams as $name => $value) {
+            if (preg_match('/^(<>|<|>|<\=|>\=|like)\|/', $value, $matched)) {
+                $operator = trim($matched[0], '|');
+                $query->where($name, $operator, str_replace("$operator|", '', $value));
+            } else {
+                $query->where($name, $value);
+            }
+        }
     }
 }

@@ -19,42 +19,53 @@ class UserActionsService
         $this->actions = $this->getUserActions();
     }
 
+    /**
+     * the main method to check user`s access to current endpoint
+     * @return bool
+     */
     public function canUserPerformAction(): bool
     {
-        $controller = $this->request->route()->getController();
+        // if empty getCurrentAction() -> return false -> return Forbidden
+        if ($this->getCurrentAction()->isNotEmpty()) {
+            if (!$this->checkIsOwner()) {
+                return true;
+            }
 
-        /** @var BaseModel $model */
-        $model = method_exists($controller, 'getBaseModel') ? $controller->getBaseModel() : null;
-
-        $checkOwnership = $model->exists ?? false;
-        if ($checkOwnership) {
-            return $this->checkOwnership($model);
-        }
-
-        return $this->getActions()->where('name', $this->actionName)->isNotEmpty();
-    }
-
-    public function checkOwnership(BaseModel $model): bool
-    {
-        $roleActions = $this->getActions()->where('name', $this->actionName);
-        if ($roleActions->isEmpty()) {
-            return false;
-        }
-
-        $needCheckOnOwner = $roleActions->where('is_owner', true)->isNotEmpty();
-        if ($needCheckOnOwner) {
+            /** @var BaseModel $model */
+            $model = $this->request->route()->getController()->getBaseModel();
             $ownerKey = $model->getOwnerKey();
-            return auth()->id() === $model->$ownerKey;
+
+            // checking to ownership (auth()->id() === $model->$ownerKey) where $ownerKey === user_id as default
+            // if isset $model (set in BaseCrudController like $this->modelClassController::find($entityId))
+            // where $entityId is first parameter from request()->route()->parameters() (only to show, update and destroy)
+            // else get empty model and $model->exists === false -> return true -> get nessesary data
+            return $model->exists ? auth()->id() === $model->$ownerKey : true;
         }
-
-        return true;
+        return false;
     }
 
-    public function getActions(): Collection
+    /**
+     * checking is_owner in role_action table for selected request()->route()->parameters() in actions table
+     * @return bool
+     */
+    public function checkIsOwner(): bool
     {
-        return $this->actions;
+        return $this->getCurrentAction()->where('is_owner', true)->isNotEmpty();
     }
 
+    /**
+     * get current name from actions table which matches with request()->route()->getName()
+     * @return Collection
+     */
+    private function getCurrentAction(): Collection
+    {
+        return $this->actions->where('name', $this->actionName);
+    }
+
+    /**
+     * get is_owner from role_action table and name from actions table
+     * @return Collection
+     */
     private function getUserActions(): Collection
     {
         $userId = Auth::id();
@@ -70,3 +81,4 @@ class UserActionsService
         });
     }
 }
+
