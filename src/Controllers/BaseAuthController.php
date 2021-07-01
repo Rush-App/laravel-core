@@ -14,7 +14,7 @@ use RushApp\Core\Services\LoggingService;
 
 abstract class BaseAuthController extends Controller
 {
-    use CoreBaseModelTrait, ResponseTrait;
+    use CoreBaseModelTrait, ResponseTrait, ValidateTrait;
 
     protected string $guard;
 
@@ -73,7 +73,7 @@ abstract class BaseAuthController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    private function loginAttempt(array $credentials): JsonResponse
+    public function loginAttempt(array $credentials): JsonResponse
     {
         if (!$token = Auth::guard($this->guard)->attempt($credentials)) {
             return $this->responseWithError(__('response_messages.incorrect_login'), 403);

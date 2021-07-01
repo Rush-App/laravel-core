@@ -9,15 +9,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controller;
 use RushApp\Core\Enums\ModelRequestParameters;
-use RushApp\Core\Models\BaseModel;
-use RushApp\Core\Models\BaseModelTrait;
 
 abstract class BaseCrudController extends Controller
 {
-    use ResponseTrait;
+    use ResponseTrait, ValidateTrait;
 
     protected string $modelClassController;
-    protected BaseModel $baseModel;
+    protected Model $baseModel;
     protected ?string $storeRequestClass = null;
     protected ?string $updateRequestClass = null;
     protected array $withRelationNames = [];
@@ -31,8 +29,8 @@ abstract class BaseCrudController extends Controller
         $this->baseModel = $entityId ? $this->modelClassController::find($entityId) : new $this->modelClassController;
     }
 
-    /** @return BaseModel */
-    public function getBaseModel(): BaseModel
+    /** @return Model */
+    public function getBaseModel(): Model
     {
         return $this->baseModel;
     }
@@ -42,7 +40,7 @@ abstract class BaseCrudController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
         //check for paginate data
         $paginate = $request->get(ModelRequestParameters::PAGINATE, false);
@@ -59,7 +57,7 @@ abstract class BaseCrudController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function show(Request $request): JsonResponse
+    public function show(Request $request)
     {
         $entityId = $request->route($this->baseModel->getTableSingularName());
         $query = $this->baseModel->getQueryBuilderOne($request->all(), $entityId, $this->withRelationNames);
@@ -72,7 +70,7 @@ abstract class BaseCrudController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $this->validateRequest($request, $this->storeRequestClass);
 
@@ -86,7 +84,7 @@ abstract class BaseCrudController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request)
     {
         $validationRequestClass = $this->updateRequestClass ?: $this->storeRequestClass;
         $this->validateRequest($request, $validationRequestClass);
@@ -102,7 +100,7 @@ abstract class BaseCrudController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Request $request)
     {
         $entityId = $request->route($this->baseModel->getTableSingularName());
         $this->baseModel->deleteOne($entityId, Auth::id());
@@ -110,22 +108,6 @@ abstract class BaseCrudController extends Controller
         return $this->successResponse([
             'message' => __('response_messages.deleted')
         ]);
-    }
-
-    /**
-     * @param Request $request
-     * @param string|null $requestClass
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function validateRequest(Request $request, ?string $requestClass): void
-    {
-        if ($requestClass) {
-            $validator = Validator::make(
-                $request->all(),
-                resolve($requestClass)->rules()
-            );
-            $validator->validate();
-        }
     }
 
     /**
