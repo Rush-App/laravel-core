@@ -37,19 +37,24 @@ abstract class BaseCrudController extends Controller
 
     /**
      * Return a collections of one or more records with or without translation and with or without paginate
+     * or return number of records
      * @param Request $request
      * @return JsonResponse
      */
     public function index(Request $request)
     {
-        //check for paginate data
-        $paginate = $request->get(ModelRequestParameters::PAGINATE, false);
-
         $query = $this->baseModel->getQueryBuilder($request->all(), $this->withRelationNames);
 
-        return $paginate
-            ? $this->successResponse($query->paginate($paginate))
-            : $this->successResponse($query->get());
+        //get number of records
+        if ($request->get(ModelRequestParameters::COUNT, false)) {
+            return $this->successResponse($query->count());
+        }
+        //check for paginate data
+        if ($paginate = $request->get(ModelRequestParameters::PAGINATE, false)) {
+            return $this->successResponse($query->paginate($paginate));
+        }
+
+        return $this->successResponse($query->get());
     }
 
     /**

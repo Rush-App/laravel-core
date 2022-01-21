@@ -92,4 +92,13 @@ class ModelRequestParameters
      */
     public const OFFSET = "offset";
 
+    /**
+     * Get number of records (for index)
+     *
+     * Example: http://127.0.0.1:8000/test?count=true
+     *
+     * @var string
+     */
+    public const COUNT = "count";
+
 }
