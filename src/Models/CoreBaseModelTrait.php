@@ -266,7 +266,7 @@ trait CoreBaseModelTrait
      * @param bool $shouldCheckColumnsInTable
      * @return Collection
      */
-    private function parseParameterWithAdditionalValues(string $parametersString, bool $shouldCheckColumnsInTable = true): Collection
+    protected function parseParameterWithAdditionalValues(string $parametersString, bool $shouldCheckColumnsInTable = true): Collection
     {
         $parameters = explode('|', $parametersString);
         $parsedParameters = collect();
