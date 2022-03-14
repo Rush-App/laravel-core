@@ -107,4 +107,11 @@ class ModelRequestParameters
      */
     public const WHERE_RELATION = "where_relation";
 
+    /**
+     * Search in multiple columns in model
+     * Example: http://127.0.0.1:8000/test?where_like=name,surname,email|stringForSearching
+     * @var string
+     */
+    public const WHERE_LIKE = "where_like";
+
 }

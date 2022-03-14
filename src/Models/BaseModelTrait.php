@@ -289,6 +289,15 @@ trait BaseModelTrait
             $query->offset($requestParameters[ModelRequestParameters::OFFSET]);
         }
 
+        //Search in multiple columns in model
+        if(!empty($requestParameters[ModelRequestParameters::WHERE_LIKE])) {
+            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_LIKE]);
+            $query->whereLike(
+                $fields = explode(',',  $parsedParameters[0]['name']),
+                $stringForSearching = $parsedParameters[1]['name'],
+            );
+        }
+
         //Get data with where_relation
         if (!empty($requestParameters[ModelRequestParameters::WHERE_RELATION])) {
             $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_RELATION]);

@@ -2,6 +2,8 @@
 
 namespace RushApp\Core;
 
+use Illuminate\Support\Arr;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RushApp\Core\Console\Commands\Install;
@@ -41,6 +43,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerMigrations();
         $this->publishFiles();
         $this->aliasMiddleware();
+        $this->macroWhereLike();
     }
 
     private function registerMigrations(): void
@@ -78,5 +81,31 @@ class CoreServiceProvider extends ServiceProvider
         foreach ($this->middlewareAliases as $alias => $middleware) {
             $router->aliasMiddleware($alias, $middleware);
         }
+    }
+
+    //Search in multiple columns in model
+    private function macroWhereLike(): void
+    {
+        Builder::macro('whereLike', function ($attributes, string $searchTerm) {
+            $this->where(function (Builder $query) use ($attributes, $searchTerm) {
+                foreach (Arr::wrap($attributes) as $attribute) {
+                    $query->when(
+                        str_contains($attribute, '.'),
+                        function (Builder $query) use ($attribute, $searchTerm) {
+                            [$relationName, $relationAttribute] = explode('.', $attribute);
+
+                            $query->orWhereHas($relationName, function (Builder $query) use ($relationAttribute, $searchTerm) {
+                                $query->where($relationAttribute, 'LIKE', "%{$searchTerm}%");
+                            });
+                          },
+                        function (Builder $query) use ($attribute, $searchTerm) {
+                            $query->orWhere($attribute, 'LIKE', "%{$searchTerm}%");
+                        }
+                    );
+                }
+            });
+
+            return $this;
+        });
     }
 }
