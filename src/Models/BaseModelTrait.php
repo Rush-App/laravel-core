@@ -289,12 +289,25 @@ trait BaseModelTrait
             $query->offset($requestParameters[ModelRequestParameters::OFFSET]);
         }
 
+        //Get data with where_relation
+        if (!empty($requestParameters[ModelRequestParameters::WHERE_RELATION])) {
+            $parsedParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::WHERE_RELATION]);
+            $query->whereRelation(
+                $relation = $parsedParameters[0]['name'],
+                $column = $parsedParameters[1]['name'],
+                $operator = $parsedParameters[2]['name'],
+                $value = $parsedParameters[3]['name'],
+            );
+        }
+
         //Parameters for "where", under what conditions the request will be displayed
         $rawWhereParams = Arr::except($this->filteringForParams($requestParameters), ['language_id']);
         foreach ($rawWhereParams as $name => $value) {
             if (preg_match('/^(<>|<|>|<\=|>\=|like)\|/', $value, $matched)) {
                 $operator = trim($matched[0], '|');
-                $query->where($name, $operator, str_replace("$operator|", '', $value));
+                $expression = str_replace("$operator|", '', $value);
+                $expression = preg_match('/^(like)\|/', $value, $matched) ? '%'.$expression.'%' : $expression;
+                $query->where($name, $operator, $expression);
             } else {
                 $query->where($name, $value);
             }

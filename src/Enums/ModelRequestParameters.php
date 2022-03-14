@@ -101,4 +101,10 @@ class ModelRequestParameters
      */
     public const COUNT = "count";
 
+    /**
+     * Example: http://127.0.0.1:8000/test?where_relation=user_role|role_id|=|1
+     * @var string
+     */
+    public const WHERE_RELATION = "where_relation";
+
 }
