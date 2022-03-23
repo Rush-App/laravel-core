@@ -138,7 +138,7 @@ trait CoreBaseModelTrait
             $translationModel = $mainModel->translations()->firstOrNew([
                 'language_id' => $dataToUpdate['language_id']
             ]);
-            $translationModel->update($dataToUpdate);
+            $translationModel->fill($dataToUpdate)->save();
 
             $modelAttributes = array_merge($translationModel->getAttributes(), $modelAttributes);
         }
