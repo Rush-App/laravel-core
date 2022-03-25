@@ -228,7 +228,8 @@ trait BaseModelTrait
             $parsedOrderParameters = $this->parseParameterWithAdditionalValues($requestParameters[ModelRequestParameters::ORDER_BY_FIELD]);
             if ($parsedOrderParameters->isNotEmpty()) {
                 foreach ($parsedOrderParameters as $parsedOrderParameter) {
-                    $query->orderBy($parsedOrderParameter['name'], $parsedOrderParameter['values'][0] ?? 'asc');
+                    $orderByParams = $parsedOrderParameter['name'] === 'id' ? $this->getTablePluralName().'.id' : $parsedOrderParameter['name'];
+                    $query->orderBy($orderByParams, $parsedOrderParameter['values'][0] ?? 'asc');
                 }
             }
         }
