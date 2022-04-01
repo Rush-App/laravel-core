@@ -119,7 +119,7 @@ abstract class BaseCrudController extends Controller
      * get first parameter from route
      * @return int|null
      */
-    private function getEntityId(): ?int
+    protected function getEntityId(): ?int
     {
         $parameters = request()->route()->parameters();
         return reset($parameters) ?? null;
