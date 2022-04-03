@@ -65,6 +65,8 @@ abstract class BaseCrudController extends Controller
     public function show(Request $request)
     {
         $entityId = $request->route($this->baseModel->getTableSingularName());
+        $entityId = !empty($entityId) ? $entityId : $this->getEntityId();
+
         $query = $this->baseModel->getQueryBuilderOne($request->all(), $entityId, $this->withRelationNames);
 
         return $this->successResponse($query->first());
@@ -95,6 +97,8 @@ abstract class BaseCrudController extends Controller
         $this->validateRequest($request, $validationRequestClass);
 
         $entityId = $request->route($this->baseModel->getTableSingularName());
+        $entityId = !empty($entityId) ? $entityId : $this->getEntityId();
+
         $modelAttributes = $this->baseModel->updateOne($request->all(), $entityId, Auth::id());
 
         return $this->successResponse($modelAttributes);
@@ -108,6 +112,8 @@ abstract class BaseCrudController extends Controller
     public function destroy(Request $request)
     {
         $entityId = $request->route($this->baseModel->getTableSingularName());
+        $entityId = !empty($entityId) ? $entityId : $this->getEntityId();
+
         $this->baseModel->deleteOne($entityId, Auth::id());
 
         return $this->successResponse([
