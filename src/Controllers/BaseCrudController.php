@@ -75,14 +75,13 @@ abstract class BaseCrudController extends Controller
     /**
      * Return created a new record
      * @param Request $request
-     * @param bool $allowExternalOwnerKey
      * @return JsonResponse
      */
-    public function store(Request $request, bool $allowExternalOwnerKey = false)
+    public function store(Request $request)
     {
         $this->validateRequest($request, $this->storeRequestClass);
 
-        $modelAttributes = $this->baseModel->createOne($request->all(), $allowExternalOwnerKey);
+        $modelAttributes = $this->baseModel->createOne($request->all());
 
         return $this->successResponse($modelAttributes);
     }
