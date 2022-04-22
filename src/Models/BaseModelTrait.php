@@ -83,11 +83,14 @@ trait BaseModelTrait
      * Return the created record
      *
      * @param array $requestParameters
+     * @param bool $allowExternalOwnerKey
      * @return array
      */
-    public function createOne(array $requestParameters): array
+    public function createOne(array $requestParameters, bool $allowExternalOwnerKey = false): array
     {
-        $requestParameters[$this->getOwnerKey()] = Auth::id();
+        if (!$allowExternalOwnerKey) {
+          $requestParameters[$this->getOwnerKey()] = Auth::id();
+        }
 
         try {
             /** @var Model|static $mainModel */
