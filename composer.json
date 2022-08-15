@@ -9,8 +9,8 @@
         }
     ],
     "require": {
-        "php": "^7.3|^8.0",
-        "laravel/framework": "^8|^9",
+        "php": "^8.0",
+        "laravel/framework": "^9",
         "tymon/jwt-auth": "^1.0"
     },
     "require-dev": {
