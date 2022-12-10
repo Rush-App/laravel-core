@@ -5,6 +5,7 @@ namespace RushApp\Core\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use RushApp\Core\Services\UserActionsService;
+use RushApp\Core\Exceptions\CoreHttpException;
 
 class CheckUserAction
 {
@@ -24,10 +25,7 @@ class CheckUserAction
     public function handle(Request $request, Closure $next): mixed
     {
         if (!$this->userActionsService->canUserPerformAction()) {
-            abort(
-                config('rushapp_core.http_statuses.forbidden'),
-                __('Forbidden')
-            );
+            throw new CoreHttpException(403, __('core::error_messages.permission_denied'));
         }
 
         return $next($request);
