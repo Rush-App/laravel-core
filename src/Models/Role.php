@@ -24,7 +24,7 @@ class Role extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description'
+        'name', 'is_registration_role', 'description'
     ];
 
     public $timestamps = false;
